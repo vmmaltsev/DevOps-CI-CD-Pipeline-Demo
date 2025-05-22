@@ -14,6 +14,12 @@ on:
       - 'Dockerfile'
       - '.github/workflows/ci.yml'
 
+# Add explicit permissions to the GITHUB_TOKEN
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 # Cancel in-progress runs when a new workflow with the same ref is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
