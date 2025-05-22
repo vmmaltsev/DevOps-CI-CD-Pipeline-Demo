@@ -124,9 +124,15 @@ jobs:
         with:
           fetch-depth: 1
 
+      # First create a buildx builder explicitly
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: image=moby/buildkit:latest
+          buildkitd-flags: --debug
 
+      # Use GitHub cache for Docker layers
       - name: Docker Build Cache
         uses: actions/cache@v3
         with:
@@ -135,23 +141,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build image
+      # Build Docker image
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          builder: buildx
+          file: ./Dockerfile
           tags: demo-app:latest
+          load: true
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-          load: true
           push: false
-          outputs: type=docker,dest=/tmp/image.tar
 
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+      # Run Trivy scan
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -161,9 +168,10 @@ jobs:
           severity: CRITICAL,HIGH
           timeout: 10m0s
 
+      # Upload Trivy scan results
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: trivy-results.sarif
           category: trivy
