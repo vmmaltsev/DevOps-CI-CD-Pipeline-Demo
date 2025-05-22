@@ -23,6 +23,7 @@ def test_health(client):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert data["status"] == "healthy"
+    assert "version" in data
 
 
 def test_not_found(client):
@@ -32,3 +33,10 @@ def test_not_found(client):
     data = json.loads(response.data)
     assert "error" in data
     assert data["error"] == "Not found"
+
+
+def test_metrics(client):
+    """Test that metrics endpoint is available."""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert b"flask_exporter_info" in response.data
